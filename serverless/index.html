@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI記事スレッド管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .tab.active {
+            color: #4facfe;
+            border-bottom-color: #4facfe;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .thread-group {
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .thread-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .article-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            transition: background-color 0.2s ease;
+        }
+        
+        .article-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .article-item:last-child {
+            border-bottom: none;
+        }
+        
+        .article-checkbox {
+            margin-right: 15px;
+            transform: scale(1.2);
+        }
+        
+        .article-info {
+            flex: 1;
+        }
+        
+        .article-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+        }
+        
+        .article-meta {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+        
+        .article-summary {
+            color: #555;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+        
+        .importance-stars {
+            color: #ffd700;
+            font-size: 1.2rem;
+            margin-left: 10px;
+        }
+        
+        .controls {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: transform 0.2s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result-area {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4facfe;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI記事スレッド管理</h1>
+            <p>過去の記事から選択して、カスタムX投稿スレッドを作成</p>
+        </div>
+        
+        <div class="content">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('history')">📚 記事履歴</button>
+                <button class="tab" onclick="switchTab('create')">✨ スレッド作成</button>
+            </div>
+            
+            <!-- 記事履歴タブ -->
+            <div id="history-tab" class="tab-content active">
+                <div class="controls">
+                    <button class="btn" onclick="loadHistory()">📥 履歴を読み込み</button>
+                    <button class="btn" onclick="selectAll()">☑️ 全選択</button>
+                    <button class="btn" onclick="clearSelection()">❌ 選択解除</button>
+                    <span id="selected-count" style="margin-left: 20px; color: #666;">選択: 0件</span>
+                </div>
+                
+                <div id="history-content" class="loading">
+                    <div class="spinner"></div>
+                    履歴を読み込み中...
+                </div>
+            </div>
+            
+            <!-- スレッド作成タブ -->
+            <div id="create-tab" class="tab-content">
+                <div class="controls">
+                    <button class="btn" id="create-thread-btn" onclick="createCustomThread()" disabled>
+                        🚀 カスタムスレッド作成
+                    </button>
+                    <p style="color: #666; margin-top: 10px;">
+                        記事履歴タブで記事を選択してからスレッドを作成してください
+                    </p>
+                </div>
+                
+                <div id="thread-result" class="result-area" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let threadHistory = {};
+        let selectedArticles = new Set();
+        
+        // Cloud Functions URL
+        const API_BASE = 'https://asia-northeast1-ai-summary-system.cloudfunctions.net/ai-rss-summarizer';
+        
+        function switchTab(tabName) {
+            // タブボタンの状態更新
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            
+            // タブコンテンツの表示切り替え
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+        
+        async function loadHistory() {
+            const historyContent = document.getElementById('history-content');
+            historyContent.innerHTML = '<div class="spinner"></div>履歴を読み込み中...';
+            
+            try {
+                const response = await fetch(`${API_BASE}?action=history&days=7`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    threadHistory = data.thread_history;
+                    renderHistory();
+                } else {
+                    historyContent.innerHTML = '<p style="color: red;">履歴の読み込みに失敗しました</p>';
+                }
+            } catch (error) {
+                historyContent.innerHTML = '<p style="color: red;">エラーが発生しました</p>';
+                console.error('Error:', error);
+            }
+        }
+        
+        function renderHistory() {
+            const historyContent = document.getElementById('history-content');
+            
+            if (Object.keys(threadHistory).length === 0) {
+                historyContent.innerHTML = '<p style="text-align: center; color: #666;">履歴がありません</p>';
+                return;
+            }
+            
+            let html = '';
+            
+            // 日付順でソート（新しい順）
+            const sortedDates = Object.keys(threadHistory).sort().reverse();
+            
+            for (const dateStr of sortedDates) {
+                const articles = threadHistory[dateStr];
+                const date = new Date(dateStr);
+                
+                html += `
+                    <div class="thread-group">
+                        <div class="thread-header">
+                            📅 ${date.toLocaleDateString('ja-JP')} ${date.toLocaleTimeString('ja-JP', {hour: '2-digit', minute: '2-digit'})} 
+                            (${articles.length}件)
+                        </div>
+                `;
+                
+                for (const article of articles) {
+                    const stars = '★'.repeat(article.importance_score) + '☆'.repeat(5 - article.importance_score);
+                    
+                    html += `
+                        <div class="article-item">
+                            <input type="checkbox" class="article-checkbox" 
+                                   value="${article.id}" 
+                                   onchange="toggleArticleSelection('${article.id}')">
+                            <div class="article-info">
+                                <div class="article-title">${article.title}</div>
+                                <div class="article-meta">
+                                    📍 ${article.source} | 
+                                    <span class="importance-stars">${stars}</span>
+                                </div>
+                                <div class="article-summary">${article.summary}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+            }
+            
+            historyContent.innerHTML = html;
+        }
+        
+        function toggleArticleSelection(articleId) {
+            if (selectedArticles.has(articleId)) {
+                selectedArticles.delete(articleId);
+            } else {
+                selectedArticles.add(articleId);
+            }
+            
+            updateSelectionUI();
+        }
+        
+        function updateSelectionUI() {
+            document.getElementById('selected-count').textContent = `選択: ${selectedArticles.size}件`;
+            document.getElementById('create-thread-btn').disabled = selectedArticles.size === 0;
+        }
+        
+        function selectAll() {
+            document.querySelectorAll('.article-checkbox').forEach(checkbox => {
+                checkbox.checked = true;
+                selectedArticles.add(checkbox.value);
+            });
+            updateSelectionUI();
+        }
+        
+        function clearSelection() {
+            document.querySelectorAll('.article-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            selectedArticles.clear();
+            updateSelectionUI();
+        }
+        
+        async function createCustomThread() {
+            if (selectedArticles.size === 0) return;
+            
+            const resultArea = document.getElementById('thread-result');
+            resultArea.style.display = 'block';
+            resultArea.textContent = 'スレッドを作成中...';
+            
+            try {
+                const ids = Array.from(selectedArticles).join(',');
+                const response = await fetch(`${API_BASE}?action=custom&ids=${ids}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    resultArea.textContent = data.thread_summary;
+                } else {
+                    resultArea.textContent = `エラー: ${data.message}`;
+                }
+            } catch (error) {
+                resultArea.textContent = 'エラーが発生しました';
+                console.error('Error:', error);
+            }
+        }
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadHistory();
+        });
+    </script>
+</body>
+</html> 

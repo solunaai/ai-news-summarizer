@@ -1,0 +1,15 @@
+# 環境変数ファイル（API Keyが含まれるため除外）
+.env
+
+# Python関連
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.egg-info/
+
+# MacOS関連
+.DS_Store
+
+# ログファイル
+*.log 

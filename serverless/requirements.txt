@@ -1,0 +1,6 @@
+functions-framework==3.*
+feedparser==6.*
+openai==1.*
+google-cloud-firestore==2.*
+slack-sdk==3.*
+requests==2.* 
