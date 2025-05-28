@@ -13,6 +13,10 @@
 - Slack通知機能
 - Webダッシュボードでの記事閲覧
 
+
+### 前提
+- 技術的に不明な箇所等あればAI（ChatGPT）等を活用しながら疑問点を解決していただけますと幸いです。
+
 ### アーキテクチャ
 ```
 Cloud Scheduler → Cloud Functions → OpenAI API → Firestore
