@@ -1,0 +1,34 @@
+# 環境変数ファイル（APIキーなどの機密情報）
+config/.env
+.env
+
+# Python関連
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.mypy_cache/
+.venv/
+venv/
+env/
+ENV/
+
+# Google Cloud関連
+.gcloud/
+service-account-key.json
+
+# エディタやOSの設定ファイル
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ログファイル
+*.log
+
+# 一時ファイル
+*.tmp
+*.temp 
